@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>Web-GIS dengan GeoServer dan Leaflet</title>
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+        #map {
+            width: 100%;
+            height: 100vh;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="map"></div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+
+    <!-- jQuery -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+
+    <!-- Leaflet GeoServer Request -->
+    <script src="lib/L.Geoserver.js"></script>
+
+    <script>
+        // Inisialisasi peta, diarahkan ke area data (bbox dari preview GeoServer)
+        var map = L.map("map");
+        map.fitBounds([[2.1050, 98.9086], [2.6610, 99.5863]]);
+
+        // Basemap OSM
+        var osm = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            maxZoom: 19,
+            attribution:
+                '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        });
+        osm.addTo(map);
+
+        // Layer WMS: Batas Kecamatan
+        var wmsLayer = L.Geoserver.wms("http://localhost:8080/geoserver/wms", {
+            layers: "ne:ADMINISTRASIKECAMATAN_AR_50K",
+            transparent: true,
+            attribution: "Batas Administrasi Kecamatan",
+        });
+        wmsLayer.addTo(map);
+
+        // Layer WMS: Agrikebun
+        var agrikebunLayer = L.Geoserver.wms("http://localhost:8080/geoserver/wms", {
+            layers: "ne:AGRIKEBUN_AR_50K",
+            transparent: true,
+            attribution: "Agrikebun",
+        });
+        agrikebunLayer.addTo(map);
+
+        // Layer WFS (data vektor, bisa diklik untuk popup)
+        var wfsLayer = L.Geoserver.wfs("http://localhost:8080/geoserver/wfs", {
+            layers: "ne:ADMINISTRASIKECAMATAN_AR_50K",
+            style: {
+                color: "black",
+                fillOpacity: 0.3,
+                fillColor: "red",
+            },
+            onEachFeature: function (feature, layer) {
+                console.log(feature.properties);
+                layer.bindPopup("Kecamatan: " + feature.properties.WADMKC);
+            },
+        });
+        // wfsLayer.addTo(map); // hapus tanda komentar untuk mengaktifkan WFS
+
+        // Legenda
+        var layerLegend = L.Geoserver.legend("http://localhost:8080/geoserver/wms", {
+            layers: "ne:ADMINISTRASIKECAMATAN_AR_50K",
+        });
+        layerLegend.addTo(map);
+
+        // Legenda
+        var layerLegend = L.Geoserver.legend("http://localhost:8080/geoserver/wms", {
+            layers: "ne:AGRIKEBUN_AR_50K",
+        });
+        layerLegend.addTo(map);
+
+        // Kontrol layer
+        var baseMaps = { "OpenStreetMap": osm };
+        var overlayMaps = {
+            "Batas Kecamatan (WMS)": wmsLayer,
+            "Agrikebun (WMS)": agrikebunLayer,
+        };
+        L.control.layers(baseMaps, overlayMaps).addTo(map);
+    </script>
+</body>
+
+</html>
